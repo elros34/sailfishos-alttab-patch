@@ -1,0 +1,9 @@
+{
+    "name": "Alt+Tab patch",
+    "description": "Adds Alt+Tab switching windows. For Photon Q it's OK + Tab",
+    "category": "homescreen",
+    "infos": {
+        "maintainer": "elros34"
+    }
+}
+

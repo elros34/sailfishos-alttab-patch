@@ -1,0 +1,60 @@
+--- /usr/share/lipstick-jolla-home-qt5/switcher/Switcher.qml
++++ /usr/share/lipstick-jolla-home-qt5/switcher/Switcher.qml
+@@ -6,6 +6,7 @@
+ ****************************************************************************/
+ 
+ import QtQuick 2.0
++import com.alttabhandler 1.0
+ import org.nemomobile.lipstick 0.1
+ import org.nemomobile.ngf 1.0
+ import com.jolla.lipstick 0.1
+@@ -147,6 +148,38 @@ SilicaFlickable {
+ 
+     onMovementStarted: minimizeLaunchingWindows()
+ 
++    property bool altTabActive: false
++
++    AltTabHandler {
++        id: altTabHandler
++
++        onAltPressedChanged: {
++            //console.log("altPressed", altPressed)
++            if (!altPressed) {
++                if (altTabActive) {
++                    altTabActive = false
++                    console.log("quickToggleApp")
++                    switcher.quickToggleApp()
++                }
++            }
++        }
++
++        onTabPressedChanged: {
++            //console.log("tabPressed", tabPressed)
++            if (secondLastAppIndex < 0)
++                return
++
++            if (altPressed && tabPressed) {
++                if (altTabActive) {
++                    secondLastAppIndex = (secondLastAppIndex+1)%mruSwitcherModel.count
++                } else {
++                    Lipstick.compositor.goToSwitcher(true)
++                }
++                altTabActive = true
++            }
++        }
++    }
++
+     PullDownMenu {
+         id: housekeepingMenu
+         visible: switcherRoot.housekeeping
+--- /usr/share/lipstick-jolla-home-qt5/switcher/SwitcherItem.qml
++++ /usr/share/lipstick-jolla-home-qt5/switcher/SwitcherItem.qml
+@@ -18,7 +18,7 @@ import "../main"
+ EditableGridDelegate {
+     id: wrapper
+     property bool currentApp: windowId != 0 && Lipstick.compositor.topmostWindowId == windowId
+-    readonly property bool quickSwitchingApp: index == secondLastAppIndex && Lipstick.compositor.quickAppToggleGestureExceeded
++    readonly property bool quickSwitchingApp: index == secondLastAppIndex && (switcherRoot.altTabActive || Lipstick.compositor.quickAppToggleGestureExceeded)
+     property int coverId
+     readonly property Item cover: Lipstick.compositor.windowForId(wrapper.coverId)
+     property int windowId
