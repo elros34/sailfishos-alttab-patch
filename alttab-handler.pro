@@ -18,7 +18,9 @@ HEADERS += \
         alttabhandler.h
 
 DISTFILES = qmldir \
-    rpm/sailfishos-alttab-patch.spec
+    rpm/sailfishos-alttab-patch.spec \
+    patch/patch.json \
+    patch/unified_diff.patch
 
 !equals(_PRO_FILE_PWD_, $$OUT_PWD) {
     copy_qmldir.target = $$OUT_PWD/qmldir

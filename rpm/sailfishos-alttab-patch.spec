@@ -9,7 +9,7 @@ Name:       sailfishos-alttab-patch
 %{!?qtc_make:%define qtc_make make}
 %{?qtc_builddir:%define _builddir %qtc_builddir}
 Summary:    My Sailfish OS Application
-Version:    0.0.1
+Version:    0.0.2
 Release:    1
 Group:      Qt/Qt
 License:    LICENSE
@@ -54,7 +54,7 @@ fi
 
 
 %files
-%defattr(-,root,root,-)
+%defattr(644,root,root,-)
 %{_libdir}/qt5/qml/com/alttabhandler/libalttab-handler.so
 %{_libdir}/qt5/qml/com/alttabhandler/qmldir
 %{_datadir}/patchmanager/patches/%{name}

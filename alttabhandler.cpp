@@ -5,26 +5,20 @@
 #include <fcntl.h>
 #include <linux/input.h>
 #include <stdint.h>
+#include <QFileSystemWatcher>
+#include <QDir>
 
 AltTabHandler::AltTabHandler(QObject *parent):
     QObject(parent),
     keyboardFd(-1),
+    socketNotifier(NULL),
     m_altPressed(false),
     m_tabPressed(false)
 {
-    keyboardFd = findKeyboardFd();
-    if (keyboardFd > 0) {
-        QString deviceName = getDeviceName(keyboardFd);
-        if (deviceName == "keypad_8960") { // Photon Q
-            altKeys[0] = KEY_LEFTCTRL; // OK key
-            altKeys[1] = -1;
-        } else {
-            altKeys[0] = KEY_LEFTALT;
-            altKeys[1] = KEY_RIGHTALT;
-        }
-        socketNotifier = new QSocketNotifier(keyboardFd, QSocketNotifier::Read, this);
-        connect(socketNotifier, SIGNAL(activated(int)), this, SLOT(readKeyboardData()));
-    }
+    QFileSystemWatcher *devicesWatcher = new QFileSystemWatcher(this);
+    devicesWatcher->addPath("/proc/bus/input/devices");
+    connect(devicesWatcher, SIGNAL(fileChanged(QString)), this, SLOT(detectKeyboard()));
+    detectKeyboard();
 }
 
 AltTabHandler::~AltTabHandler()
@@ -60,12 +54,39 @@ void AltTabHandler::setTabPressed(bool tabPressed)
     emit tabPressedChanged();
 }
 
+void AltTabHandler::detectKeyboard()
+{
+    if (socketNotifier)
+        delete socketNotifier;
+    if (keyboardFd > 0)
+        close(keyboardFd);
+
+    keyboardFd = findKeyboardFd();
+    if (keyboardFd > 0) {
+        QString deviceName = getDeviceName(keyboardFd);
+        if (deviceName == "keypad_8960") { // Photon Q
+            altKeys[0] = KEY_LEFTCTRL; // OK key
+            altKeys[1] = -1;
+        } else {
+            altKeys[0] = KEY_LEFTALT;
+            altKeys[1] = KEY_RIGHTALT;
+        }
+        socketNotifier = new QSocketNotifier(keyboardFd, QSocketNotifier::Read, this);
+        connect(socketNotifier, SIGNAL(activated(int)), this, SLOT(readKeyboardData()));
+    }
+}
+
 int AltTabHandler::findKeyboardFd()
 {
     uint8_t evtypeMask;
     int fd = -1;
-    for (int i = 0; i < 30; ++i) {
-        fd = open("/dev/input/event" + QByteArray::number(i), O_RDONLY | O_NONBLOCK);
+    QDir inputDir("/dev/input/");
+    QStringList eventFiles = inputDir.entryList({"event*"},
+                                                QDir::Files | QDir::NoDotAndDotDot | QDir::System,
+                                                QDir::Name | QDir::Reversed);
+    qDebug() << "eventFiles: " << eventFiles;
+    foreach (QString eventFile, eventFiles) {
+        fd = open("/dev/input/" + eventFile.toLocal8Bit(), O_RDONLY | O_NONBLOCK);
         if (fd < 0)
             break;
 
@@ -80,7 +101,7 @@ int AltTabHandler::findKeyboardFd()
             uint8_t keysMask[searchKey / 8 + 1];
             if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keysMask)), keysMask)) {
                 if (keysMask[searchKey / 8] & (1 << (searchKey % 8))) {
-                    qDebug("Found keyboard at: /dev/input/event%d", i);
+                    qDebug() << "Found keyboard at: /dev/input/" << eventFile;
                     return fd;
                 }
             }

@@ -34,6 +34,7 @@ private:
 
 private slots:
     void readKeyboardData();
+    void detectKeyboard();
 
 signals:
     void altPressedChanged();
