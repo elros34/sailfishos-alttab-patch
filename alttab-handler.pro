@@ -3,8 +3,6 @@ TARGET = alttab-handler
 QT += qml quick
 CONFIG += plugin c++11
 
-INCLUDEPATH += /usr/include
-
 TARGET = $$qtLibraryTarget($$TARGET)
 uri = com.alttabhandler
 
